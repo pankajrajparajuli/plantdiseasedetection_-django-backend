@@ -1,0 +1,23 @@
+# Ignore logs
+
+# Ignore virtual environments
+venv/
+.env/
+
+# Ignore model files
+*.h5
+*.keras
+
+# Ignore datasets or training folders
+train/
+test/
+valid/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# VSCode and Jupyter junk
+.vscode/
+.ipynb_checkpoints/
+# Ignore logs
