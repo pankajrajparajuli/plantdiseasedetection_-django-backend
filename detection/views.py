@@ -89,7 +89,7 @@ default_remedy = "Use recommended fungicides and practice good agricultural hygi
 
 
 class PlantDiseaseDetectAPIView(APIView):
-    permission_classes = [permissions.AllowAny]  # Require login
+    permission_classes = [permissions.IsAuthenticated]  # Require login
 
     def post(self, request):
         if 'image' not in request.FILES:
