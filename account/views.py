@@ -5,7 +5,9 @@ from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 from .serializers import RegisterSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
+# account/views.py
 User = get_user_model()
 
 
@@ -21,18 +23,16 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated,)  # user must be logged in
 
     def post(self, request):
         try:
-            # Get refresh token from request data
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
-            # Blacklist the refresh token
-            token.blacklist()
-            return Response({"message": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT)
+            token.blacklist()  # blacklist the refresh token
+            return Response({"detail": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
-            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetailView(APIView):
