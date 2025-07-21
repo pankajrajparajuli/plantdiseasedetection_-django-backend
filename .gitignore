@@ -1,4 +1,5 @@
-# Ignore logs
+# Ignore media
+media/
 
 # Ignore virtual environments
 venv/
@@ -20,4 +21,4 @@ __pycache__/
 # VSCode and Jupyter junk
 .vscode/
 .ipynb_checkpoints/
-# Ignore logs
+# Ignore logspy
