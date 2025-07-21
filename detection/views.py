@@ -89,9 +89,29 @@ class HistoryDeleteView(generics.DestroyAPIView):
 
 
 # API to delete all prediction history of the logged-in user
+
+# This view handles deletion of all prediction history for the authenticated user
+def delete(request):
+    # Get the password from the request data
+    password = request.data.get("password")
+
+    # If password is not provided, return 400 Bad Request
+    if not password:
+        return Response({"error": "Password is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if the provided password matches the user's password
+    if not check_password(password, request.user.password):
+        # If password is incorrect, return 403 Forbidden
+        return Response({"error": "Incorrect password."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Delete all prediction history records for the current user
+    deleted_count, _ = PredictionHistory.objects.filter(user=request.user).delete()
+
+    # Return a success response with the number of deleted records
+    return Response({"message": f"{deleted_count} records deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+
 class ClearHistoryView(APIView):
+    # Only allow access to authenticated users
     permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request):
-        deleted_count, _ = PredictionHistory.objects.filter(user=request.user).delete()
-        return Response({"message": f"{deleted_count} records deleted."}, status=status.HTTP_204_NO_CONTENT)
