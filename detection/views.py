@@ -65,7 +65,7 @@ class HistoryListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return PredictionHistory.objects.filter(user=self.request.user)
+        return PredictionHistory.objects.filter(user=self.request.user).order_by('-timestamp')
 
 
 # API to retrieve specific prediction detail
