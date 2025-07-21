@@ -75,4 +75,4 @@ This app provides:
    python manage.py runserver
    
 4. ***Access the API docs***
-    Visit http://127.0.0.1:8000/api/schema/swagger-ui/
+    Visit http://127.0.0.1:8000/api/docs/
