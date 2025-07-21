@@ -1,52 +1,78 @@
-# plant_disease_detection
-this is backend for plant disease detection in python and django
+# 🌿 Plant Disease Detection API
 
-🧠 App Summary
-This is an authenticated plant disease detection app with:
+An intelligent, authenticated API for detecting plant diseases from images. Built with **Django REST Framework**, it features user authentication, prediction history tracking, and JWT-based security.
 
-User account features (register/login/logout/update)
+---
 
-Disease prediction
+## 🧠 App Summary
 
-History tracking (with retrieval and deletion)
+This app provides:
 
-JWT authentication (with refresh and blacklist/logout support)
+- ✅ User registration, login, logout, and profile updates
+- 🧠 AI-based plant disease detection from uploaded images
+- 📜 Prediction history tracking (retrieve, view detail, delete)
+- 🔐 JWT authentication (access & refresh tokens with blacklist support)
 
+---
 
-🔐 Authentication APIs
+## 🔐 Authentication APIs
 
-Method	Endpoint	Purpose
+| Method | Endpoint                     | Description                                                       |
+|--------|------------------------------|-------------------------------------------------------------------|
+| POST   | `/api/account/login/`        | Log in user and receive JWT access & refresh tokens               |
+| POST   | `/api/account/logout/`       | Logout user by blacklisting the refresh token                     |
+| POST   | `/api/account/refresh/`      | Generate new access token using refresh token                     |
+| POST   | `/api/account/register/`     | Register a new user                                               |
+| PUT    | `/api/account/update_profile/` | Update profile info of the authenticated user                  |
+| GET    | `/api/account/user_detail/`  | Fetch profile details of the currently authenticated user         |
 
-POST	/api/account/login/	Log in user using credentials → returns access & refresh JWT tokens
+---
 
-POST	/api/account/logout/	Logs out the user by blacklisting the refresh token
+## 🌱 Plant Disease Detection APIs
 
-POST	/api/account/refresh/	Provides a new access token using the refresh token
+| Method | Endpoint                                 | Description                                            |
+|--------|------------------------------------------|--------------------------------------------------------|
+| POST   | `/api/detection/predict/`                | Upload plant image to receive disease prediction       |
+| GET    | `/api/detection/history/`                | View all prediction history for the current user       |
+| GET    | `/api/detection/history/{id}/`           | View detailed info about a specific prediction         |
+| DELETE | `/api/detection/history/{id}/delete/`    | Delete a specific prediction                          |
+| DELETE | `/api/detection/history/clear/`          | Delete all prediction history for the current user     |
 
-POST	/api/account/register/	Registers a new user
+---
 
-PUT	/api/account/update_profile/	Allows authenticated user to update profile info
+## 🧪 Other Endpoints
 
-GET	/api/account/user_detail/	Gets currently logged-in user’s profile details
+| Method | Endpoint         | Description                      |
+|--------|------------------|----------------------------------|
+| GET    | `/api/schema/`   | OpenAPI/Swagger schema for the API |
 
+---
 
-🌱 Plant Disease Detection APIs
+## 📦 Tech Stack
 
-Method	Endpoint	Purpose
+- Python 3.10+
+- Django 5.x
+- Django REST Framework
+- SimpleJWT (for JWT authentication)
+- TensorFlow/Keras or similar for prediction (assumed)
 
-POST	/api/detection/predict/	Accepts an image, returns disease prediction
+---
 
-GET	/api/detection/history/	Retrieves list of past predictions made by the user
+## 🚀 How to Use
 
-GET	/api/detection/history/{id}/	Retrieves detailed info about a specific prediction
-
-DELETE	/api/detection/history/{id}/delete/	Deletes a specific prediction from history
-
-DELETE	/api/detection/history/clear/	Deletes all prediction history for the current user
-
-
-🧪 Other Endpoint
-
-Method	Endpoint	Purpose
-
-GET	/api/schema/	OpenAPI schema (used by Swagger UI)
+1. **Clone the repo**  
+   ```bash
+   git clone https://github.com/yourusername/plant-disease-api.git
+   cd plant-disease-api
+2. **Create virtual environment & install dependencies**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # or venv\Scripts\activate on Windows
+   pip install -r requirements.txt
+3. **Apply migrations & run the server**
+   ```bash
+   python manage.py migrate
+   python manage.py runserver
+   
+4. ***Access the API docs***
+    Visit http://127.0.0.1:8000/api/schema/swagger-ui/
