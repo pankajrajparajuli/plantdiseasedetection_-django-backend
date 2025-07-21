@@ -62,7 +62,7 @@ This app provides:
 
 1. **Clone the repo**  
    ```bash
-   git clone https://github.com/yourusername/plant-disease-api.git
+   git clone https://github.com/pankajrajparajuli/plant-disease-api.git
    cd plant-disease-api
 2. **Create virtual environment & install dependencies**
    ```bash
