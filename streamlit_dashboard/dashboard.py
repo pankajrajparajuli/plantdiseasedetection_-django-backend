@@ -1,9 +1,21 @@
+import os
+import django
+
+# 1. Set the settings module (use your project name here)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'plantguard.settings')
+
+# 2. Initialize Django
+django.setup()
+
+# 3. Now safely import other Django-related code
+import utils
+
 import streamlit as st
 from streamlit_option_menu import option_menu
-import utils
 import users
 import predictions
 import model_manager
+
 
 st.set_page_config(page_title="Admin Dashboard", layout="wide")
 
@@ -12,6 +24,7 @@ if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 if 'username' not in st.session_state:
     st.session_state['username'] = None
+
 
 def login():
     st.title("Admin Login")
@@ -28,11 +41,13 @@ def login():
             else:
                 st.error("Invalid credentials or not a superuser.")
 
+
 def logout():
     st.session_state['logged_in'] = False
     st.session_state['username'] = None
     st.success("Logged out.")
     st.experimental_rerun()
+
 
 if not st.session_state['logged_in']:
     login()
@@ -51,7 +66,7 @@ with st.sidebar:
         styles={
             "container": {"padding": "5px", "background-color": "#f8fafc"},
             "icon": {"color": "#0d6efd", "font-size": "20px"},
-            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px", "--hover-color": "#e2e8f0"},
+            "nav-link": {"font-size": "16px", "text-align": "left", "margin": "0px", "--hover-color": "#e2e8f0"},
             "nav-link-selected": {"background-color": "#0d6efd", "color": "white"},
         }
     )
@@ -108,4 +123,4 @@ elif selected == "Settings":
     st.info("Settings page coming soon.")
 
 elif selected == "Logout":
-    logout() 
+    logout()
