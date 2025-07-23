@@ -1,13 +1,18 @@
+import sys
 import os
 import django
 
-# 1. Set the settings module (use your project name here)
+# Get the project root (one level above this file)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
+# Set the settings module (change 'plantguard' if your folder name is different)
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'plantguard.settings')
 
-# 2. Initialize Django
+# Setup Django
 django.setup()
 
-# 3. Now safely import other Django-related code
+# safely import other Django-related code
 import utils
 
 import streamlit as st
