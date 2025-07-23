@@ -21,7 +21,6 @@ def render_predictions():
             "Username": p.user.username,
             "Disease": p.disease,
             "Confidence": p.confidence,
-            "Remedy": p.remedy,
             "Timestamp": p.timestamp,
         })
     df = pd.DataFrame(preds_list)

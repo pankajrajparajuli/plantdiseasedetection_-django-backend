@@ -23,7 +23,7 @@ def inject_css():
 
 
 # --- Helper functions ---
-def fetch_users(search=None, start_date=None, end_date=None, page=1, page_size=10):
+def fetch_users(search=None, start_date=None, end_date=None, page=1, page_size=20):
     params = {"page": page, "page_size": page_size}
     if search:
         params['search'] = search
@@ -34,7 +34,7 @@ def fetch_users(search=None, start_date=None, end_date=None, page=1, page_size=1
     return jwt_auth.authorized_get(f"{API_BASE}/users/", params=params)
 
 
-def fetch_user_history(user_id, page=1, page_size=10, sort_by="-timestamp"):
+def fetch_user_history(user_id, page=1, page_size=20, sort_by="-timestamp"):
     params = {"page": page, "page_size": page_size, "ordering": sort_by}
     return jwt_auth.authorized_get(f"{API_BASE}/users/{user_id}/history/", params=params)
 
@@ -66,9 +66,7 @@ def init_state():
     for k, v in {
         'selected_user': None,
         'user_page': 1,
-        'user_page_size': 10,
-        'user_history_page': 1,
-        'user_history_page_size': 10,
+        'user_page_size': 20,
         'user_history_sort': '-timestamp',
     }.items():
         if k not in st.session_state:
@@ -80,8 +78,8 @@ def render():
     init_state()
     st.title("User History Management")
 
-    # ---------------- USERS LIST PAGE ----------------
     if st.session_state['selected_user'] is None:
+        # --- Level 1: User List ---
         st.subheader("All Users")
         col1, col2, col3 = st.columns([2, 2, 2])
         with col1:
@@ -97,7 +95,26 @@ def render():
             users_resp = fetch_users(search, start_date if start_date else None, end_date if end_date else None,
                                      page=user_page, page_size=user_page_size)
 
-        users = users_resp  # Assume list
+        # --- Handle failed request ---
+        if users_resp is None or (hasattr(users_resp, "status_code") and users_resp.status_code != 200):
+            st.error("Failed to fetch users. Please log in again or check the API.")
+            return
+
+        # Get JSON safely
+        if hasattr(users_resp, "json"):
+            try:
+                users_data = users_resp.json()
+            except Exception:
+                st.error("Error decoding users response.")
+                return
+        else:
+            users_data = users_resp
+
+        users = users_data.get("results", users_data) if isinstance(users_data, dict) else users_data
+        if not users:
+            st.info("No users found.")
+            return
+
         total_users = len(users)
 
         user_rows = [{"ID": u['id'], "Username": u['username'], "Email": u['email'],
@@ -124,11 +141,10 @@ def render():
                                      format_func=lambda x: "Select a user" if x is None else f"User ID {x}")
         if selected_user:
             st.session_state['selected_user'] = selected_user
-            st.session_state['user_history_page'] = 1  # reset history pagination
             st.rerun()
 
-    # ---------------- USER HISTORY PAGE ----------------
     else:
+        # --- Level 2: User Prediction History ---
         user_id = st.session_state['selected_user']
         st.subheader(f"Prediction History for User ID {user_id}")
         if st.button("Back to User List"):
@@ -140,22 +156,24 @@ def render():
                         "Highest Confidence": "-confidence", "Lowest Confidence": "confidence"}
         st.session_state['user_history_sort'] = sort_mapping[sort_choice]
 
-        page = st.session_state['user_history_page']
-        page_size = st.session_state['user_history_page_size']
         with st.spinner("Loading prediction history..."):
-            history_resp = fetch_user_history(user_id, page=page, page_size=page_size,
-                                              sort_by=st.session_state['user_history_sort'])
+            history_resp = fetch_user_history(user_id, sort_by=st.session_state['user_history_sort'])
 
-        if hasattr(history_resp, 'status_code'):
-            if history_resp.status_code != 200:
-                st.error(f"Failed to fetch history: {history_resp.status_code}")
+        if history_resp is None or (hasattr(history_resp, "status_code") and history_resp.status_code != 200):
+            st.error("Failed to fetch prediction history.")
+            return
+
+        # Get JSON safely
+        if hasattr(history_resp, "json"):
+            try:
+                history_data = history_resp.json()
+            except Exception:
+                st.error("Error decoding prediction history.")
                 return
-            history_data = history_resp.json()
-            history = history_data.get('results', history_data) if isinstance(history_data, dict) else history_data
         else:
-            history = history_resp
-            history_data = {"count": len(history)}
+            history_data = history_resp
 
+        history = history_data.get('results', history_data) if isinstance(history_data, dict) else history_data
         total_preds = history_data.get('count', len(history)) if isinstance(history_data, dict) else len(history)
         if total_preds == 0:
             st.info("No predictions to delete.")
@@ -183,20 +201,6 @@ def render():
                     st.rerun()
                 else:
                     st.error("Failed to delete prediction.")
-
-        # Pagination for history
-        total_pages = max(1, (total_preds + page_size - 1) // page_size)
-        col_prev, col_page, col_next = st.columns([1, 2, 1])
-        with col_prev:
-            if st.button("Previous", disabled=page <= 1):
-                st.session_state['user_history_page'] -= 1
-                st.rerun()
-        with col_page:
-            st.write(f"Page {page} of {total_pages}")
-        with col_next:
-            if st.button("Next", disabled=page >= total_pages):
-                st.session_state['user_history_page'] += 1
-                st.rerun()
 
         # Clear all history
         if st.checkbox("I confirm I want to delete ALL history for this user"):
