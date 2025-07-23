@@ -54,6 +54,7 @@ urlpatterns = [
 
     # URL to access ReDoc UI for API documentation (optional alternative to Swagger)
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
 ]
 
 # Serve media files (like uploaded images) during development

@@ -21,6 +21,7 @@ import users
 import predictions
 import model_manager
 import user_history
+import jwt_auth
 
 # --- THEME: Green Navbar, Black Main Background, Small Login Box ---
 st.markdown("""
@@ -134,7 +135,6 @@ if 'username' not in st.session_state:
     st.session_state['username'] = None
 
 def login():
-    # Only render login-container when login form is present and not empty
     login_html = '''<div class="login-container">
     <div class="login-header">Plant Guard Admin Login</div>
     '''
@@ -144,7 +144,7 @@ def login():
         password = st.text_input("Password", type="password")
         submit = st.form_submit_button("Login")
         if submit:
-            if utils.is_superuser(username, password):
+            if jwt_auth.login_and_store_tokens(username, password):
                 st.session_state['logged_in'] = True
                 st.session_state['username'] = username
                 st.success("Login successful!")
@@ -154,12 +154,15 @@ def login():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def logout():
+    st.session_state['logout_confirm'] = False
     st.session_state['logged_in'] = False
     st.session_state['username'] = None
+    st.session_state['access_token'] = None
+    st.session_state['refresh_token'] = None
     st.success("Logged out.")
     st.rerun()
 
-if not st.session_state['logged_in']:
+if not st.session_state['logged_in'] or not jwt_auth.get_access_token():
     login()
     st.stop()
 

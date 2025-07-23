@@ -1,10 +1,13 @@
-from rest_framework import generics, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import generics, status, mixins
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
-from .serializers import RegisterSerializer
+
+from detection.models import PredictionHistory
+from detection.serializers import PredictionHistorySerializer
+from .serializers import RegisterSerializer, UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 # account/views.py
@@ -103,3 +106,67 @@ class UserProfileUpdateView(APIView):
         user.save()  # Save changes to database
 
         return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
+
+
+class UserListView(APIView):
+    permission_classes = [IsAdminUser]  # Only admin users can access this view
+
+    def get(self, request):
+        users = User.objects.all()
+
+        # Optional search filter by username/email
+        search = request.GET.get('search')
+        if search:
+            users = users.filter(username__icontains=search)
+
+        # Pagination
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 20))
+        start = (page - 1) * page_size
+        end = start + page_size
+        users = users[start:end]
+
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminUserHistoryView(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    generics.GenericAPIView,
+):
+    serializer_class = PredictionHistorySerializer
+    permission_classes = [IsAdminUser]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        return PredictionHistory.objects.filter(user_id=user_id).order_by('-timestamp')
+
+    def get(self, request, user_id, id=None):
+        if id is None:
+            # List all
+            return self.list(request, user_id=user_id)
+        else:
+            # Retrieve one
+            return self.retrieve(request, user_id=user_id, id=id)
+
+    def delete(self, request, user_id, id=None):
+        if id is not None:
+            # Delete single prediction
+            return self.destroy(request, user_id=user_id, id=id)
+        return Response({"detail": "Method DELETE without id not allowed here."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class AdminUserHistoryClearView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def delete(self, request, user_id):
+        histories = PredictionHistory.objects.filter(user_id=user_id)
+        count = histories.count()
+        histories.delete()
+        return Response(
+            {"detail": f"Deleted {count} prediction history records for user {user_id}."},
+            status=status.HTTP_204_NO_CONTENT
+        )
