@@ -20,8 +20,9 @@ from streamlit_option_menu import option_menu
 import users
 import predictions
 import model_manager
+import user_history
 
-# --- THEME: Green & White, Responsive Sidebar ---
+# --- THEME: Green Navbar, Black Main Background, Small Login Box ---
 st.markdown("""
 <style>
 :root {
@@ -29,6 +30,7 @@ st.markdown("""
   --main-green-dark: #205723;
   --accent-green: #43a047;
   --white: #fff;
+  --main-black: #111;
 }
 section[data-testid="stSidebar"] {
   background: var(--main-green) !important;
@@ -59,32 +61,68 @@ section[data-testid="stSidebar"] .stButton>button:hover {
   border-radius: 8px;
 }
 .stApp {
-  background: var(--white) !important;
+  background: var(--main-black) !important;
 }
+/* Make all text white by default in main area */
+.stApp, .stApp * {
+  color: var(--white) !important;
+}
+/* Remove green surface from dashboard components, make them transparent/dark */
 .stMetric, .stForm, .stDataFrame, .stTable, .stExpander, .stAlert {
-  background: var(--white) !important;
+  background: transparent !important;
   border-radius: 12px !important;
-  border: 2px solid var(--main-green) !important;
-  color: var(--main-green-dark) !important;
-  box-shadow: 0 2px 8px rgba(46,125,50,0.08);
+  border: none !important;
+  color: var(--white) !important;
+  box-shadow: none !important;
 }
-.stButton>button, .stDownloadButton>button {
+.stExpanderHeader {
+  color: var(--main-green) !important;
+}
+.stTextInput>div>input, .stTextArea>div>textarea, .stSelectbox>div>div>div>div {
+  border: 1.5px solid var(--main-green) !important;
+  border-radius: 6px !important;
+  background: #222 !important;
+  color: var(--white) !important;
+}
+/* Small, centered login box, modern look */
+.login-container {
+  max-width: 340px;
+  margin: 8vh auto 0 auto;
+  background: #181818cc;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px 0 #000a;
+  padding: 2.5em 2em 2em 2em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1.5px solid var(--main-green);
+}
+.login-header {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-green);
+  margin-bottom: 1.2em;
+  letter-spacing: 1px;
+  text-align: center;
+}
+.login-container h1, .login-container label, .login-container input {
+  color: var(--white) !important;
+}
+.login-container .stTextInput>div>input {
+  background: #222 !important;
+  border: 1.5px solid var(--main-green) !important;
+  color: var(--white) !important;
+}
+.login-container .stButton>button {
   background: var(--main-green) !important;
   color: var(--white) !important;
   border-radius: 8px !important;
   border: none !important;
   font-weight: 600;
-  transition: background 0.2s;
+  margin-top: 1em;
 }
-.stButton>button:hover, .stDownloadButton>button:hover {
+.login-container .stButton>button:hover {
   background: var(--accent-green) !important;
-}
-.stTextInput>div>input, .stTextArea>div>textarea, .stSelectbox>div>div>div>div {
-  border: 1.5px solid var(--main-green) !important;
-  border-radius: 6px !important;
-}
-.stExpanderHeader {
-  color: var(--main-green-dark) !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -96,7 +134,11 @@ if 'username' not in st.session_state:
     st.session_state['username'] = None
 
 def login():
-    st.title("Admin Login")
+    # Only render login-container when login form is present and not empty
+    login_html = '''<div class="login-container">
+    <div class="login-header">Plant Guard Admin Login</div>
+    '''
+    st.markdown(login_html, unsafe_allow_html=True)
     with st.form("login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -109,6 +151,7 @@ def login():
                 st.rerun()
             else:
                 st.error("Invalid credentials or not a superuser.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def logout():
     st.session_state['logged_in'] = False
@@ -126,8 +169,8 @@ with st.sidebar:
     st.markdown(f"**Logged in as:** <span style='color:#fff'>{st.session_state['username']}</span>", unsafe_allow_html=True)
     selected = option_menu(
         menu_title="Main Menu",
-        options=["Dashboard", "Users", "Predictions", "History", "Model Management", "Settings", "Logout"],
-        icons=["speedometer", "people", "activity", "clock-history", "cloud-upload", "gear", "box-arrow-right"],
+        options=["Dashboard", "Users", "User History", "Predictions", "History", "Model Management", "Settings", "Logout"],
+        icons=["speedometer", "people", "clock-history", "activity", "clock-history", "cloud-upload", "gear", "box-arrow-right"],
         menu_icon="cast",
         default_index=0,
         styles={
@@ -153,7 +196,7 @@ if selected == "Dashboard":
     df_users = utils.get_user_growth()
     if not df_users.empty:
         fig = px.line(df_users, x='date', y='count', title='User Growth', color_discrete_sequence=["#2e7d32"])
-        fig.update_layout(plot_bgcolor="#fff", paper_bgcolor="#fff", font_color="#2e7d32")
+        fig.update_layout(plot_bgcolor="#111", paper_bgcolor="#111", font_color="#43a047")
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No user data available.")
@@ -162,7 +205,7 @@ if selected == "Dashboard":
     df_pred = utils.get_predictions_by_disease()
     if not df_pred.empty:
         fig2 = px.bar(df_pred, x='disease', y='count', title='Predictions by Disease', color_discrete_sequence=["#2e7d32"])
-        fig2.update_layout(plot_bgcolor="#fff", paper_bgcolor="#fff", font_color="#2e7d32")
+        fig2.update_layout(plot_bgcolor="#111", paper_bgcolor="#111", font_color="#43a047")
         st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("No prediction data available.")
@@ -171,13 +214,16 @@ if selected == "Dashboard":
     df_per_day = utils.get_predictions_per_day()
     if not df_per_day.empty:
         fig3 = px.area(df_per_day, x='date', y='count', title='Predictions Per Day', color_discrete_sequence=["#2e7d32"])
-        fig3.update_layout(plot_bgcolor="#fff", paper_bgcolor="#fff", font_color="#2e7d32")
+        fig3.update_layout(plot_bgcolor="#111", paper_bgcolor="#111", font_color="#43a047")
         st.plotly_chart(fig3, use_container_width=True)
     else:
         st.info("No daily prediction data available.")
 
 elif selected == "Users":
     users.render()
+
+elif selected == "User History":
+    user_history.render()
 
 elif selected == "Predictions":
     predictions.render_predictions()

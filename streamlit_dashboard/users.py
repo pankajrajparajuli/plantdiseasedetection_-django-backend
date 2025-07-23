@@ -7,10 +7,36 @@ def render():
     st.title("\U0001F465 User Management")
     st.markdown("Manage users: add, edit, delete, and export.")
 
+    # --- Custom CSS for wider table, dropdowns, and to hide checkmark ---
+    st.markdown(
+        """
+        <style>
+        .stTextInput > div > input,
+        .stTextArea > div > textarea,
+        .stSelectbox > div > div > div > div {
+            border: none !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            color: inherit !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     # --- Search and Filter ---
     search = st.text_input("Search by username or email")
-    is_staff = st.selectbox("Staff status", options=["All", "Staff", "Non-staff"])
-    is_superuser = st.selectbox("Superuser status", options=["All", "Superuser", "Regular"])
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        with st.container():
+            st.markdown('<div class="user-filter">', unsafe_allow_html=True)
+            is_staff = st.selectbox("Staff status", options=["All", "Staff", "Non-staff"])
+            st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        with st.container():
+            st.markdown('<div class="user-filter">', unsafe_allow_html=True)
+            is_superuser = st.selectbox("Superuser status", options=["All", "Superuser", "Regular"])
+            st.markdown('</div>', unsafe_allow_html=True)
 
     staff_val = None if is_staff == "All" else (is_staff == "Staff")
     superuser_val = None if is_superuser == "All" else (is_superuser == "Superuser")
@@ -18,8 +44,11 @@ def render():
     users_qs = utils.get_users(search=search, is_staff=staff_val, is_superuser=superuser_val)
     users_list = list(users_qs.values('id', 'username', 'email', 'is_staff', 'is_superuser', 'date_joined'))
 
+    # --- Wider table container ---
+    st.markdown('<div class="user-table-container">', unsafe_allow_html=True)
     df = pd.DataFrame(users_list)
     st.dataframe(df, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # --- Export as CSV ---
     st.download_button("Export as CSV", df.to_csv(index=False), "users.csv")
@@ -69,4 +98,4 @@ def render():
                     if st.warning("Are you sure you want to delete this user? This action cannot be undone.", icon="\u26a0\ufe0f"):
                         User.objects.get(id=row['id']).delete()
                         st.success("User deleted.")
-                        st.rerun() 
+                        st.rerun()
