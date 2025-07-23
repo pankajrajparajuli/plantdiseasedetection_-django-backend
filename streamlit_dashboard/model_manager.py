@@ -2,6 +2,7 @@ import streamlit as st
 import utils
 import pandas as pd
 
+
 def render():
     st.title("\U0001F916 Model Management")
     st.markdown("Upload, view, and set active ML models.")
@@ -27,7 +28,7 @@ def render():
         st.dataframe(df, use_container_width=True)
 
         for m in models:
-            col1, col2 = st.columns([3,1])
+            col1, col2 = st.columns([3, 1])
             col1.markdown(f"**{m['name']}** (Uploaded: {m['upload_date']})")
             if m["name"] == utils.get_active_model():
                 col2.success("Active")
@@ -37,4 +38,4 @@ def render():
                     st.success(f"{m['name']} set as active model.")
                     st.rerun()
     else:
-        st.info("No models uploaded yet.") 
+        st.info("No models uploaded yet.")

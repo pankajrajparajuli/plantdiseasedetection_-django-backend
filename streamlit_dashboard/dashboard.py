@@ -2,6 +2,8 @@ import sys
 import os
 import django
 
+from streamlit_dashboard import jwt_auth
+
 # Get the project root (one level above this file)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
@@ -124,6 +126,17 @@ section[data-testid="stSidebar"] .stButton>button:hover {
 .login-container .stButton>button:hover {
   background: var(--accent-green) !important;
 }
+/* Sidebar width customization */
+section[data-testid="stSidebar"] {
+  width: 374px !important;
+  min-width: 374px !important;
+  max-width: 374px !important;
+  border-radius: 10px !important;
+}
+/* Adjust main content margin when sidebar expanded */
+section[data-testid="stSidebar"][aria-expanded="true"] ~ div[data-testid="stAppContent"] {
+  margin-left: 374px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,31 +146,34 @@ if 'logged_in' not in st.session_state:
 if 'username' not in st.session_state:
     st.session_state['username'] = None
 
+
 def login():
-    # Only render login-container when login form is present and not empty
-    login_html = '''<div class="login-container">
-    <div class="login-header">Plant Guard Admin Login</div>
-    '''
-    st.markdown(login_html, unsafe_allow_html=True)
+    st.markdown('<div class="login-header">Plant Guard Admin Login</div>', unsafe_allow_html=True)
+
     with st.form("login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submit = st.form_submit_button("Login")
+
         if submit:
-            if utils.is_superuser(username, password):
+            success = jwt_auth.login_and_store_tokens(username, password)
+            if success:
                 st.session_state['logged_in'] = True
                 st.session_state['username'] = username
                 st.success("Login successful!")
                 st.rerun()
             else:
-                st.error("Invalid credentials or not a superuser.")
+                st.error("Invalid credentials or login failed.")
+
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 def logout():
     st.session_state['logged_in'] = False
     st.session_state['username'] = None
     st.success("Logged out.")
     st.rerun()
+
 
 if not st.session_state['logged_in']:
     login()
@@ -166,19 +182,46 @@ if not st.session_state['logged_in']:
 # --- Sidebar Navigation ---
 with st.sidebar:
     st.image("https://img.icons8.com/ios-filled/100/ffffff/admin-settings-male.png", width=80)
-    st.markdown(f"**Logged in as:** <span style='color:#fff'>{st.session_state['username']}</span>", unsafe_allow_html=True)
+    st.markdown(
+        f"**Logged in as:** <span style='color:#fff'>{st.session_state['username']}</span>",
+        unsafe_allow_html=True,
+    )
     selected = option_menu(
         menu_title="Main Menu",
-        options=["Dashboard", "Users", "User History", "Predictions", "History", "Model Management", "Settings", "Logout"],
-        icons=["speedometer", "people", "clock-history", "activity", "clock-history", "cloud-upload", "gear", "box-arrow-right"],
+        options=[
+            "Dashboard",
+            "Users",
+            "User History",
+            "Predictions",
+            "History",
+            "Model Management",
+            "Settings",
+            "Logout",
+        ],
+        icons=[
+            "speedometer",
+            "people",
+            "clock-history",
+            "activity",
+            "clock-history",
+            "cloud-upload",
+            "gear",
+            "box-arrow-right",
+        ],
         menu_icon="cast",
         default_index=0,
         styles={
             "container": {"padding": "5px", "background-color": "#2e7d32", "border-radius": "10px"},
             "icon": {"color": "#fff", "font-size": "20px"},
-            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px", "color": "#fff", "--hover-color": "#43a047"},
+            "nav-link": {
+                "font-size": "16px",
+                "text-align": "left",
+                "margin": "0px",
+                "color": "#fff",
+                "--hover-color": "#43a047",
+            },
             "nav-link-selected": {"background-color": "#43a047", "color": "#fff", "font-weight": "bold"},
-        }
+        },
     )
 
 # --- Main Content ---
@@ -186,16 +229,16 @@ if selected == "Dashboard":
     st.title("\U0001F4CA Dashboard")
     metrics = utils.get_user_metrics()
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total Users", metrics['total_users'])
-    col2.metric("Total Predictions", metrics['total_predictions'])
-    col3.metric("Most Predicted Disease", metrics['most_predicted'])
+    col1.metric("Total Users", metrics["total_users"])
+    col2.metric("Total Predictions", metrics["total_predictions"])
+    col3.metric("Most Predicted Disease", metrics["most_predicted"])
 
     import plotly.express as px
 
     st.subheader("User Growth Over Time")
     df_users = utils.get_user_growth()
     if not df_users.empty:
-        fig = px.line(df_users, x='date', y='count', title='User Growth', color_discrete_sequence=["#2e7d32"])
+        fig = px.line(df_users, x="date", y="count", title="User Growth", color_discrete_sequence=["#2e7d32"])
         fig.update_layout(plot_bgcolor="#111", paper_bgcolor="#111", font_color="#43a047")
         st.plotly_chart(fig, use_container_width=True)
     else:
@@ -204,7 +247,13 @@ if selected == "Dashboard":
     st.subheader("Predictions by Disease")
     df_pred = utils.get_predictions_by_disease()
     if not df_pred.empty:
-        fig2 = px.bar(df_pred, x='disease', y='count', title='Predictions by Disease', color_discrete_sequence=["#2e7d32"])
+        fig2 = px.bar(
+            df_pred,
+            x="disease",
+            y="count",
+            title="Predictions by Disease",
+            color_discrete_sequence=["#2e7d32"],
+        )
         fig2.update_layout(plot_bgcolor="#111", paper_bgcolor="#111", font_color="#43a047")
         st.plotly_chart(fig2, use_container_width=True)
     else:
@@ -213,7 +262,13 @@ if selected == "Dashboard":
     st.subheader("Predictions Per Day")
     df_per_day = utils.get_predictions_per_day()
     if not df_per_day.empty:
-        fig3 = px.area(df_per_day, x='date', y='count', title='Predictions Per Day', color_discrete_sequence=["#2e7d32"])
+        fig3 = px.area(
+            df_per_day,
+            x="date",
+            y="count",
+            title="Predictions Per Day",
+            color_discrete_sequence=["#2e7d32"],
+        )
         fig3.update_layout(plot_bgcolor="#111", paper_bgcolor="#111", font_color="#43a047")
         st.plotly_chart(fig3, use_container_width=True)
     else:
@@ -240,14 +295,17 @@ elif selected == "Settings":
 
 elif selected == "Logout":
     if "confirm_logout" not in st.session_state:
-        st.session_state["confirm_logout"] = False
-
+        # Set confirm_logout to True but immediately logout
+        st.session_state["confirm_logout"] = True
+        logout()
+        st.experimental_rerun()
     else:
-        # Confirmation UI
+        # This branch won’t really be reached now, but kept for structure
         st.warning("Are you sure you want to log out?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Yes, Logout"):
-                logout()  # Call your logout function
+                logout()
                 st.session_state["confirm_logout"] = False
-                st.rerun()
+                st.experimental_rerun()
+
