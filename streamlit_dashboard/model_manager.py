@@ -35,6 +35,6 @@ def render():
                 if col2.button("Set Active", key=f"set_active_{m['name']}"):
                     utils.set_active_model(m["name"])
                     st.success(f"{m['name']} set as active model.")
-                    st.experimental_rerun()
+                    st.rerun()
     else:
         st.info("No models uploaded yet.") 

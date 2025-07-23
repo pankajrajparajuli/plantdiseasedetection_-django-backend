@@ -42,7 +42,7 @@ def render():
                     user.is_superuser = is_superuser
                     user.save()
                     st.success("User added successfully.")
-                    st.experimental_rerun()
+                    st.rerun()
 
     # --- Edit/Delete User ---
     st.markdown("### Edit or Delete Users")
@@ -64,9 +64,9 @@ def render():
                         user.set_password(new_password)
                     user.save()
                     st.success("User updated.")
-                    st.experimental_rerun()
+                    st.rerun()
                 if delete:
                     if st.warning("Are you sure you want to delete this user? This action cannot be undone.", icon="\u26a0\ufe0f"):
                         User.objects.get(id=row['id']).delete()
                         st.success("User deleted.")
-                        st.experimental_rerun() 
+                        st.rerun() 
