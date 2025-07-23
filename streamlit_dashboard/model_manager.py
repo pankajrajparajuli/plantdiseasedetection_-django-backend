@@ -13,7 +13,7 @@ def render():
         if submit and uploaded_file:
             utils.save_model_file(uploaded_file)
             st.success("Model uploaded successfully.")
-            st.experimental_rerun()
+            st.rerun()
 
     # --- List Models ---
     st.markdown("### Uploaded Models")

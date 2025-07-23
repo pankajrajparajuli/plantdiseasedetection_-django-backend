@@ -42,7 +42,7 @@ def login():
                 st.session_state['logged_in'] = True
                 st.session_state['username'] = username
                 st.success("Login successful!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid credentials or not a superuser.")
 
@@ -51,7 +51,7 @@ def logout():
     st.session_state['logged_in'] = False
     st.session_state['username'] = None
     st.success("Logged out.")
-    st.experimental_rerun()
+    sst.rerun()
 
 
 if not st.session_state['logged_in']:
