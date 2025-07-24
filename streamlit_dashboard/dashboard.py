@@ -1,28 +1,30 @@
 import sys
 import os
+
+# Add project root to sys.path so Django and other packages can be found
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 import django
 
-from streamlit_dashboard import jwt_auth
-
-# Get the project root (one level above this file)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR)
-
-# Set the settings module (change 'plantguard' if your folder name is different)
+# Set Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'plantguard.settings')
 
 # Setup Django
 django.setup()
 
-# safely import other Django-related code
-import utils
+# Relative imports inside the streamlit_dashboard package
+import jwt_auth
 
-import streamlit as st
-from streamlit_option_menu import option_menu
+import utils
 import users
 import predictions
 import model_manager
 import user_history
+
+import streamlit as st
+from streamlit_option_menu import option_menu
 
 # --- THEME: Green Navbar, Black Main Background, Small Login Box ---
 st.markdown("""
@@ -81,7 +83,6 @@ section[data-testid="stSidebar"] .stButton>button:hover {
   color: var(--main-green) !important;
 }
 .stTextInput>div>input, .stTextArea>div>textarea, .stSelectbox>div>div>div>div {
-  border: 1.5px solid var(--main-green) !important;
   border-radius: 6px !important;
   background: #222 !important;
   color: var(--white) !important;
@@ -308,4 +309,3 @@ elif selected == "Logout":
                 logout()
                 st.session_state["confirm_logout"] = False
                 st.experimental_rerun()
-

@@ -55,7 +55,8 @@ class PlantDiseaseDetectAPIView(APIView):
                     image=image_file,
                     disease=pred_label,
                     confidence=confidence,
-                    remedy=remedy
+                    remedy=remedy,
+                    preventive_measures=prevention,
                 )
 
             # Return prediction response
@@ -63,7 +64,7 @@ class PlantDiseaseDetectAPIView(APIView):
                 "disease": pred_label,
                 "confidence": round(confidence, 4),
                 "remedy": remedy,
-                "prevention": prevention,
+                "preventive_measure": prevention,
             })
 
         except Exception as e:
