@@ -40,6 +40,19 @@ This app provides:
 
 ---
 
+## 🧑‍💼 Admin APIs (Django Admin Panel)
+
+| Access | URL                        | Description                               |
+|--------|----------------------------|-------------------------------------------|
+| GET    | `/admin/`                  | Admin login dashboard                     |
+| GET    | `/admin/account/user/`     | Manage all registered users               |
+| GET    | `/admin/detection/prediction/` | View or delete any prediction history |
+
+> ℹ️ All admin endpoints are accessible via the Django admin panel.  
+> Requires login with superuser credentials.
+
+---
+
 ## 🧪 Other Endpoints
 
 | Method | Endpoint         | Description                      |
@@ -54,7 +67,7 @@ This app provides:
 - Django 5.x
 - Django REST Framework
 - SimpleJWT (for JWT authentication)
-- TensorFlow/Keras or similar for prediction (assumed)
+- TensorFlow/Keras 
 
 ---
 
