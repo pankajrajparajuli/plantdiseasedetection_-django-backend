@@ -1,5 +1,0 @@
-streamlit
-streamlit-option-menu
-django
-plotly
-pandas 
