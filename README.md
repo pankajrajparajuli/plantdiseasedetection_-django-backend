@@ -67,7 +67,8 @@ This app provides:
 - Django 5.x
 - Django REST Framework
 - SimpleJWT (for JWT authentication)
-- TensorFlow/Keras 
+- TensorFlow/Keras
+- Streamlit (For Admin Pannel)
 
 ---
 
