@@ -21,5 +21,7 @@ urlpatterns = [
     path('users/<int:user_id>/history/<int:id>/', AdminUserHistoryView.as_view(), name='admin-history-detail'),
     path('users/<int:user_id>/history/<int:id>/delete/', AdminUserHistoryView.as_view(), name='admin-history-delete'),
     path('users/<int:user_id>/history/clear/', AdminUserHistoryClearView.as_view(), name='admin-history-clear'),
+    path('admin/users/', UserListView.as_view(), name='user_list'),
+
 ]
 # This file defines the URL patterns for the account app, linking views to specific endpoints.

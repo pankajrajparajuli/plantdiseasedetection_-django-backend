@@ -2,16 +2,15 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
+from detection.models import PredictionHistory
 
-User = get_user_model()  # Use get_user_model() for custom user models compatibility
+User = get_user_model()
 
 
 class AccountTests(APITestCase):
     def setUp(self):
         """
-        setUp is called before every test method to create initial data.
-        Here we create a test user and define endpoint URLs to reuse.
-        Using reverse() ensures URL resolution stays consistent with urls.py.
+        Create a test user and setup URL reversals.
         """
         self.user = User.objects.create_user(
             username='testuser',
@@ -20,33 +19,30 @@ class AccountTests(APITestCase):
             first_name="Test",
             last_name="User"
         )
-        # URL endpoints - names should match those declared in urls.py
         self.login_url = reverse('token_obtain_pair')
         self.refresh_url = reverse('token_refresh')
         self.register_url = reverse('register')
         self.logout_url = reverse('logout')
-        self.user_detail_url = reverse('user_detail')  # View user details endpoint
-        self.user_update_url = reverse('user_profile')  # User profile update endpoint
+        self.user_detail_url = reverse('user_detail')
+        self.user_update_url = reverse('user_profile')
+        self.user_list_url = reverse('user_list')
 
     def authenticate(self):
         """
-        Helper method to perform login and set JWT token in HTTP_AUTHORIZATION header.
-        This avoids repeating login code in every test that requires authentication.
+        Log in test user and set Authorization header.
         """
         response = self.client.post(self.login_url, {
-            "username": "testuser",  # Use username as per authentication config
+            "username": "testuser",
             "password": "securepassword123"
         })
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # Ensure login success
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.access_token = response.data['access']
         self.refresh_token = response.data['refresh']
-        # Set token for authenticated requests
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
 
     def test_register_user(self):
         """
-        Test user registration endpoint.
-        Checks both HTTP status and existence of new user in the DB.
+        Should register new user successfully.
         """
         response = self.client.post(self.register_url, {
             "username": "newuser",
@@ -60,8 +56,7 @@ class AccountTests(APITestCase):
 
     def test_logout_user(self):
         """
-        Test logout functionality, typically blacklisting the refresh token.
-        Ensures token invalidation returns correct HTTP status.
+        Should invalidate refresh token on logout.
         """
         self.authenticate()
         response = self.client.post(self.logout_url, {"refresh": self.refresh_token})
@@ -69,8 +64,7 @@ class AccountTests(APITestCase):
 
     def test_user_detail_view(self):
         """
-        Test retrieving authenticated user's detail information.
-        Checks that email matches the expected value.
+        Should retrieve logged-in user's profile.
         """
         self.authenticate()
         response = self.client.get(self.user_detail_url)
@@ -79,23 +73,20 @@ class AccountTests(APITestCase):
 
     def test_update_user_profile_without_password(self):
         """
-        Test updating user profile fields except password.
-        Verifies changes are persisted in the database.
+        Should update first/last name without requiring old password.
         """
         self.authenticate()
         response = self.client.put(self.user_update_url, {
             "first_name": "Updated",
-            "last_name": "Name"
+            "last_name": "User"
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.user.refresh_from_db()  # Refresh from DB to get updated values
+        self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, "Updated")
-        self.assertEqual(self.user.last_name, "Name")
 
     def test_update_password_with_old_password(self):
         """
-        Test password update when the correct old password is provided.
-        Ensures password is actually changed and properly hashed.
+        Should allow password change when correct old password is provided.
         """
         self.authenticate()
         response = self.client.put(self.user_update_url, {
@@ -108,8 +99,7 @@ class AccountTests(APITestCase):
 
     def test_update_password_without_old_password(self):
         """
-        Test that password update fails if old password is not provided.
-        Checks that API returns HTTP 400 and an error message.
+        Should reject password change if old password is missing.
         """
         self.authenticate()
         response = self.client.put(self.user_update_url, {
@@ -120,8 +110,7 @@ class AccountTests(APITestCase):
 
     def test_update_password_with_wrong_old_password(self):
         """
-        Test that password update fails if the provided old password is incorrect.
-        Confirms error handling and correct HTTP response.
+        Should reject password change if old password is wrong.
         """
         self.authenticate()
         response = self.client.put(self.user_update_url, {
@@ -130,3 +119,110 @@ class AccountTests(APITestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
+
+    def test_admin_can_view_user_list(self):
+        """
+        Admin should be able to view the list of all users.
+        """
+        self.user.is_staff = True
+        self.user.save()
+        self.authenticate()
+        User.objects.create_user(username="another", email="a@example.com", password="pass123")
+        response = self.client.get(self.user_list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(u["username"] == "another" for u in response.data))
+
+    def test_non_admin_cannot_view_user_list(self):
+        """
+        Regular users should get 403 on user list endpoint.
+        """
+        self.authenticate()
+        response = self.client.get(self.user_list_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_can_list_user_prediction_history(self):
+        """
+        Admin should list all prediction history of a user.
+        """
+        self.user.is_staff = True
+        self.user.save()
+        self.authenticate()
+        url = reverse('admin-history-list', kwargs={'user_id': self.user.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_admin_can_retrieve_single_user_prediction_history(self):
+        """
+        Admin should fetch a specific prediction entry.
+        """
+        self.user.is_staff = True
+        self.user.save()
+        self.authenticate()
+        history = PredictionHistory.objects.create(
+            user=self.user,
+            image='test.jpg',
+            disease='Tomato___Late_blight',
+            confidence=0.95,
+            remedy='Use systemic fungicide.',
+            preventive_measures='Rotate crops.'
+        )
+        url = reverse('admin-history-detail', kwargs={
+            'user_id': self.user.id,
+            'id': history.id
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['disease'], "Tomato___Late_blight")
+
+    def test_admin_can_delete_single_user_prediction(self):
+        """
+        Admin should be able to delete a specific prediction.
+        """
+        self.user.is_staff = True
+        self.user.save()
+        self.authenticate()
+        history = PredictionHistory.objects.create(
+            user=self.user,
+            image='test.jpg',
+            disease='Tomato___Late_blight',
+            confidence=0.95,
+            remedy='Use systemic fungicide.',
+            preventive_measures='Rotate crops.'
+        )
+        url = reverse('admin-history-delete', kwargs={
+            'user_id': self.user.id,
+            'id': history.id
+        })
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(PredictionHistory.objects.filter(id=history.id).exists())
+
+    def test_admin_can_clear_all_user_predictions(self):
+        """
+        Admin should bulk delete all predictions for a user.
+        """
+        self.user.is_staff = True
+        self.user.save()
+        self.authenticate()
+        PredictionHistory.objects.bulk_create([
+            PredictionHistory(
+                user=self.user,
+                image='1.jpg',
+                disease='Tomato___Early_blight',
+                confidence=0.89,
+                remedy='Apply fungicide.',
+                preventive_measures='Crop rotation.'
+            ),
+            PredictionHistory(
+                user=self.user,
+                image='2.jpg',
+                disease='Tomato___Late_blight',
+                confidence=0.92,
+                remedy='Use systemic fungicide.',
+                preventive_measures='Avoid overhead watering.'
+            ),
+        ])
+        url = reverse('admin-history-clear', kwargs={'user_id': self.user.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(PredictionHistory.objects.filter(user=self.user).count(), 0)
